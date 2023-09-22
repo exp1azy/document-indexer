@@ -16,7 +16,34 @@ namespace DocumentIndexer.Services
             _index = config.GetSection("ElasticSearch")["Index"]!;
         }
 
-        public async Task<IEnumerable<WordDocument>> SearchAsync(IEnumerable<WordDocument> docs, CancellationToken cancellationToken)
+        public async Task<IEnumerable<WordDocument>> SearchByTextAsync(string searchText, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                throw new ApplicationException("Поисковый запрос не может быть пустым или состоять из пробелов");
+            }
+
+            var response = await _elasticClient.SearchAsync<WordDocument>(s => s
+                .Index(_index)
+                .Query(q => q
+                    .Match(m => m
+                        .Field(f => f.Text)
+                        .Query(searchText)
+                     )
+                ), cancellationToken
+            );
+
+            if (response.IsValid)
+            {
+                return response.Documents;
+            }
+            else
+            {
+                throw new ApplicationException($"{response.ServerError}");
+            }
+        }
+
+        public async Task<IEnumerable<WordDocument>> CatchDosumentsAsync(IEnumerable<WordDocument> docs, CancellationToken cancellationToken)
         {
             if (docs == null || !docs.Any())
             {
@@ -106,7 +133,7 @@ namespace DocumentIndexer.Services
                 throw new ApplicationException("Список документов на удаление не может быть пуст");
             }
 
-            var caughtDocs = await SearchAsync(docs, cancellationToken);
+            var caughtDocs = await CatchDosumentsAsync(docs, cancellationToken);
             var response = await _elasticClient.BulkAsync(descr => caughtDocs.Aggregate(descr, (d, i) => d.Delete<WordDocument>(dd => dd.Index(_index).Id(i.Id))), cancellationToken);
 
             if (!response.ApiCall.Success)

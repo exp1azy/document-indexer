@@ -17,6 +17,20 @@ namespace DocumentIndexer.Controllers
         }
 
         [HttpGet]
+        [Route("search")]
+        public async Task<IActionResult> Search([FromQuery] string text, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return Ok(await _elasticService.SearchByTextAsync(text, cancellationToken));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet]
         [Route("get")]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
@@ -24,7 +38,7 @@ namespace DocumentIndexer.Controllers
             {
                 var docs = _documentService.ReadAllDocuments();
 
-                return Ok(await _elasticService.SearchAsync(docs, cancellationToken));
+                return Ok(await _elasticService.CatchDosumentsAsync(docs, cancellationToken));
             }
             catch (ApplicationException ex)
             {

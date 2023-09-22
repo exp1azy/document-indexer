@@ -1,6 +1,5 @@
 ﻿using DocumentIndexer.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing.Imaging;
 
 namespace DocumentIndexer.Controllers
 {
