@@ -1,5 +1,6 @@
 ﻿using DocumentIndexer.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Drawing.Imaging;
 
 namespace DocumentIndexer.Controllers
 {
@@ -15,12 +16,25 @@ namespace DocumentIndexer.Controllers
         }
 
         [HttpGet]
-        [Route("get/{file}")]
+        [Route("{file}")]
         public IActionResult Get([FromRoute] string file)
         {
             try
             {
                 return Ok(_documentService.ReadDocument(file));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet]
+        public IActionResult GetRequired([FromQuery] List<string> file)
+        {
+            try
+            {
+                return Ok(_documentService.ReadRequiredDocuments(file));
             }
             catch (ApplicationException ex)
             {

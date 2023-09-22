@@ -16,8 +16,22 @@ namespace DocumentIndexer.Controllers
             _elasticService = elasticService;
         }
 
+        [HttpGet]
+        [Route("{file}")]
+        public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return Ok(await _elasticService.GetByIdAsync(id, cancellationToken));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPost]
-        [Route("index/{file}")]
+        [Route("{file}")]
         public async Task<IActionResult> Index([FromRoute] string file, CancellationToken cancellationToken)
         {
             try
@@ -43,6 +57,39 @@ namespace DocumentIndexer.Controllers
                 await _elasticService.IndexManyAsync(docs, cancellationToken);
 
                 return Ok("Документы успешно индексированы");
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteRequired([FromQuery] List<string> fileNames, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var docs = _documentService.ReadRequiredDocuments(fileNames);
+                await _elasticService.DeleteAsync(docs, cancellationToken);
+
+                return Ok("Удаление указанных документов прошло успешно");
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        [Route("delete")]
+        public async Task<IActionResult> Delete(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var docs = _documentService.ReadAllDocuments();
+                await _elasticService.DeleteAsync(docs, cancellationToken);
+
+                return Ok("Удаление всех документов прошло успешно");
             }
             catch (ApplicationException ex)
             {
