@@ -17,6 +17,22 @@ namespace DocumentIndexer.Controllers
         }
 
         [HttpGet]
+        [Route("get")]
+        public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var docs = _documentService.ReadAllDocuments();
+
+                return Ok(await _elasticService.SearchAsync(docs, cancellationToken));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet]
         [Route("{file}")]
         public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
         {

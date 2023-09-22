@@ -16,19 +16,34 @@ namespace DocumentIndexer.Services
             _index = config.GetSection("ElasticSearch")["Index"]!;
         }
 
-        private async Task<IEnumerable<WordDocument>> SearchAsync(IEnumerable<WordDocument> docs, CancellationToken cancellationToken)
+        public async Task<IEnumerable<WordDocument>> SearchAsync(IEnumerable<WordDocument> docs, CancellationToken cancellationToken)
         {
-            var response = await _elasticClient.SearchAsync<WordDocument>(s => s
-                .Index(_index)
-                , cancellationToken
-            );
-
-            if (!response.ApiCall.Success)
+            if (docs == null || !docs.Any())
             {
-                throw new ApplicationException(response.ApiCall.OriginalException.Message);
+                throw new ApplicationException("Список документов не может быть пустым");
             }
 
-            return response.Documents;
+            var foundDocuments = new List<WordDocument>();
+
+            foreach (var document in docs)
+            {
+                var response = await _elasticClient.SearchAsync<WordDocument>(s => s
+                    .Index(_index)
+                    .Query(q => q
+                        .Match(m => m
+                            .Field(f => f.Title)
+                            .Query(document.Title)
+                        )
+                    ), cancellationToken
+                );
+
+                if (response.IsValid && response.Documents.Any())
+                {
+                    foundDocuments.AddRange(response.Documents);
+                }
+            }
+
+            return foundDocuments;
         }
 
         public async Task<WordDocument?> GetByIdAsync(string id, CancellationToken cancellationToken)
